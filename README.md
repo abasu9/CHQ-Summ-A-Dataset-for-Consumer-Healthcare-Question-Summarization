@@ -9,34 +9,14 @@
 
 **Evaluation framework for the CHQ-Summ dataset for consumer healthcare question summarization.**
 
-> 📄 **Original Paper**: [CHQ-Summ: A Dataset for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2206.06581)  
-> 👥 **Original Authors**: Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
-> 🏛️ **Institutions**: University of Illinois Chicago & National Library of Medicine, NIH  
-> 👨‍💻 **Repository Maintainer**: Abhishek Basu
+>  **Original Paper**: [CHQ-Summ: A Dataset for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2206.06581)  
+>  **Original Authors**: Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
+>  **Institutions**: University of Illinois Chicago & National Library of Medicine, NIH  
+>  **Repository Maintainer**: Abhishek Basu
 
 ---
 
-## 📋 Table of Contents
-
-- [Overview](#-overview)
-- [Dataset](#-dataset)
-- [Installation](#-installation)
-- [Data Preparation](#-data-preparation)
-- [Quick Start](#-quick-start)
-- [Evaluation Framework](#-evaluation-framework)
-- [Results](#-results)
-- [Advanced Usage](#-advanced-usage)
-- [Dataset Analysis](#-dataset-analysis)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Citation](#-citation)
-- [Acknowledgments](#-acknowledgments)
-- [Contact](#-contact)
-- [Links](#-links)
-
----
-
-## 🎯 Overview
+##  Overview
 
 The **CHQ-Summ** dataset targets summarization of consumer health questions from online forums. Such questions often include peripheral information, complicating downstream understanding. This repository provides a modern, reproducible evaluation framework for automatic question summarization systems.
 
@@ -51,7 +31,7 @@ The **CHQ-Summ** dataset targets summarization of consumer health questions from
 
 ---
 
-## 📊 Dataset
+##  Dataset
 
 ### CHQ-Summ Statistics
 
@@ -95,7 +75,7 @@ Each entry contains:
 
 ---
 
-## 🚀 Installation
+##  Installation
 
 ### Prerequisites
 
@@ -141,7 +121,7 @@ pyyaml>=6.0
 
 ---
 
-## 📁 Data Preparation
+##  Data Preparation
 
 ### Step 1: Download Data
 
@@ -181,7 +161,7 @@ data/
 
 ---
 
-## 🎮 Quick Start
+##  Quick Start
 
 ### Evaluate Pre-trained Models
 
@@ -221,7 +201,7 @@ bash scripts/run_evaluation.sh
 
 ---
 
-## 🔬 Evaluation Framework
+##  Evaluation Framework
 
 ### Supported Models
 
@@ -304,7 +284,7 @@ results/
 
 ---
 
-## 🛠️ Advanced Usage
+##  Advanced Usage
 
 ### Custom Model Evaluation
 
@@ -340,7 +320,7 @@ class EvaluationMetrics:
 
 ---
 
-## 📊 Dataset Analysis
+##  Dataset Analysis
 
 ### Question Focus (examples)
 
@@ -360,7 +340,7 @@ class EvaluationMetrics:
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/AmazingFeature`
@@ -372,13 +352,13 @@ class EvaluationMetrics:
 
 ---
 
-## 📄 License
+##  License
 
 MIT — see [LICENSE](LICENSE).
 
 ---
 
-## 📚 Citation
+##  Citation
 
 If you use this dataset or code, please cite:
 
@@ -413,7 +393,7 @@ If you use this dataset or code, please cite:
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 * Yahoo! Answers (L6 dataset) for the L6 dataset
 * National Library of Medicine, NIH for supporting this research
@@ -422,18 +402,18 @@ If you use this dataset or code, please cite:
 
 ---
 
-## 📧 Contact
+##  Contact
 
 * **Repository Maintainer**: Abhishek Basu — [abasu9@uic.edu](mailto:abasu9@uic.edu)
 * **Issues**: use [GitHub Issues](../../issues)
 
 ---
 
-## 🔗 Links
+##  Links
 
-* 📄 Paper: [https://arxiv.org/abs/2206.06581](https://arxiv.org/abs/2206.06581)
-* 💾 Dataset: [https://doi.org/10.17605/OSF.IO/X5RGM](https://doi.org/10.17605/OSF.IO/X5RGM)
-* 🌐 Yahoo L6: [https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11](https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11)
+*  Paper: [https://arxiv.org/abs/2206.06581](https://arxiv.org/abs/2206.06581)
+*  Dataset: [https://doi.org/10.17605/OSF.IO/X5RGM](https://doi.org/10.17605/OSF.IO/X5RGM)
+*  Yahoo L6: [https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11](https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11)
 
 ---
 
