@@ -159,5 +159,5 @@ Yahoo-CHQ-Summ/
 
 ---
 
-** If you find this useful, please star the repo!**
+**If you find this useful, please star the repo!**
 
