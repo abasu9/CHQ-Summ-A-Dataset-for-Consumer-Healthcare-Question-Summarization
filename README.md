@@ -9,9 +9,9 @@
 **Evaluation framework for the CHQ-Summ dataset for consumer healthcare question summarization.**
 
 >  **Original Paper**: [CHQ-Summ: A Dataset for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2206.06581)  
->  **Original Authors**: Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
+>  **Original Authors**: Abhishek Basu, Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
 >  **Institutions**: University of Illinois Chicago & National Library of Medicine, NIH  
->  **Repository Maintainer**: Abhishek Basu
+
 
 ---
 
