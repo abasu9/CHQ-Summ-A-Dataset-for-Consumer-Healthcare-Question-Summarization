@@ -121,36 +121,6 @@ Each model is evaluated using **7 complementary metrics** capturing different as
 
 ---
 
-##  Results
-
-### Fine-Tuned Baselines (Seq2Seq Models)
-
-| Method | Model | ROUGE-L | BERTScore | Sem. Coh. | Q.E. Overlap | Entity Pres. | SummaC | Entail. | Avg |
-|:--|:--|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| Standard | BART | 0.715 | 0.822 | 0.365 | 0.385 | 0.581 | 0.450 | 0.676 | 0.571 |
-| Standard | PEGASUS | 0.603 | 0.748 | 0.387 | 0.410 | 0.608 | 0.533 | 0.784 | 0.582 |
-| Standard | T5 | 0.739 | 0.831 | 0.340 | 0.432 | 0.630 | 0.481 | 0.743 | 0.599 |
-| Standard | ProphetNet | 0.686 | 0.772 | 0.317 | 0.270 | 0.464 | 0.435 | 0.717 | 0.523 |
-
-### Modern LLMs (Inference Only)
-
-| Model | Best Shot | ROUGE-L | BERTScore | Entailment | SummaC | Avg |
-|:--|:--:|:--:|:--:|:--:|:--:|:--:|
-| DeepSeek 7B | 5-shot | 0.489 | 0.904 | 0.877 | 0.642 | 0.625 |
-| Mistral 7B v0.3 | 5-shot | 0.750 | 0.945 | 0.928 | 0.889 | 0.732 |
-| Qwen-2 7B | 2-shot | 0.563 | 0.929 | 0.881 | 0.772 | 0.676 |
-| Llama-3.1 8B | 5-shot | 0.343 | 0.867 | 0.841 | 0.152 | 0.540 |
-| Gemma 7B | 0-shot | 0.237 | 0.861 | 0.748 | 0.570 | 0.546 |
-
----
-
-##  Key Observations
-
-- **ProphetNet** achieved the strongest **validation ROUGE-L** (≈ 0.69), while **BART** and **T5** generalized better to the test set.  
-- **Mistral 7B v0.3** led among inference-only models, showing the best balance between factuality and semantic accuracy under 5-shot prompting.  
-- **ROUGE and BERTScore** trends suggest that lexical similarity does not always guarantee factual correctness—entity and entailment metrics are critical for healthcare text evaluation.  
-- **Prompting strategies** such as *Hierarchical* and *Chain-of-Density* improved retention of key entities and reduced hallucination in smaller LLMs.
-
 ---
 ##  Dataset
 
