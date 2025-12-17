@@ -28,7 +28,7 @@ This repository **reproduces and extends** the original work:
 
 This implementation includes:
 - Fine-tuning of **classical seq2seq models** (BART, PEGASUS, ProphetNet, T5)
-- Zero-, two-, and five-shot **inference-only evaluation** of **open-weight LLMs**
+- Zero, two, and five-shot **inference-only evaluation** of **open-weight LLMs**
 - A unified **multi-metric evaluation framework** covering lexical, semantic, and factual quality
 
 ---
