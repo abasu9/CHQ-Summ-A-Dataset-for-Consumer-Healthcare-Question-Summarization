@@ -171,18 +171,3 @@ python -m spacy download en_core_web_sm
 * Yahoo L6: [https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11](https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11)
 
 ---
-
-**If you find this repository useful, please star it.**
-
-```
-
----
-
-This is now **GitHub-valid, journal-safe, reviewer-clean**, with **zero content changes**.
-
-If you want, next we can:
-- add CLI examples **without touching text**
-- validate against *Scientific Data* checklist
-- generate a `CITATION.cff` file
-
-Just say.
