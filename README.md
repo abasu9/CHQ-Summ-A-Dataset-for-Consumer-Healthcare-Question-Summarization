@@ -30,7 +30,132 @@ This implementation includes:
 - Zero-, two-, and five-shot **inference-only evaluation** of **open-weight LLMs**
 - A unified **multi-metric evaluation framework** covering lexical, semantic, and factual quality
 
+
 ---
 
-## Repository Structure
+## Dataset
+
+### CHQ-Summ Statistics
+Dataset Split:
+├── Train: 1,000 samples
+├── Validation: 400 samples
+└── Test: 400 samples (*107 in some releases)
+
+Content Statistics:
+├── Avg Question Length: ~177 words (~10 sentences)
+├── Avg Summary Length: ~13 words (1–2 sentences)
+├── Question Focus: 1,788 distinct entities
+├── Question Types: 33 types (Information, Treatment, Cause, Symptoms, …)
+└── Source: Yahoo! Answers — Healthcare category
+
+> *Some releases include 107 test samples instead of 400.*
+
+---
+
+### Dataset Access
+
+1. **CHQ-Summ annotations (OSF)**  
+   https://doi.org/10.17605/OSF.IO/X5RGM  
+   Files: `train.json`, `val.json`, `test.json`
+
+2. **Yahoo L6 full dataset (Webscope)**  
+   https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11  
+   Files: `yahool6.xml` / `FullOct2007.xml` (requires data use agreement)
+
+---
+
+### Data Format
+
+Each entry contains:
+
+```json
+{
+  "id": "question_id",
+  "human_summary": "What are symptoms of diabetes?",
+  "question_focus": ["diabetes"],
+  "question_type": ["symptoms"]
+}
+## Models 
+
+### Fine-Tuned Seq2Seq Baselines
+
+The following models are fine-tuned on the CHQ-Summ training split:
+
+- **BART (base)**
+- **PEGASUS (large)**
+- **ProphetNet (base)**
+- **T5-Base**
+
+
+---
+
+## Large Language Model Evaluation
+
+We evaluate **inference-only** performance of modern open-weight LLMs without fine-tuning:
+
+- **Gemma-7B**
+- **DeepSeek-7B**
+- **Mistral-7B-v0.3**
+- **Llama-3.1-8B**
+- **Llama-3.2-3B**
+- **Qwen-2-7B**
+
+Zero-shot, two-shot, and five-shot prompting strategies are supported.
+
+---
+
+## Evaluation Metrics
+
+All models are evaluated using the **same metric suite**:
+
+| Metric | Description | Category |
+|------|------------|----------|
+| ROUGE-L | Longest common subsequence overlap | Lexical |
+| BERTScore | Contextual semantic similarity | Semantic |
+| Semantic Coherence | Readability and logical flow | Structural |
+| QE Overlap | Retention of key question evidence | Information |
+| Entity Preservation | Medical entity correctness | Factual |
+| SummaC | Entailment-based factual consistency | Inference |
+| Entailment | Logical validity of summaries | Inference |
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.8+
+- CUDA 11.8+
+- 16GB RAM (24GB+ recommended)
+
+### Setup
+
+```bash
+git clone https://github.com/abasu9/CHQ-Summ-A-Dataset-for-Consumer-Healthcare-Question-Summarization.git
+cd CHQ-Summ-A-Dataset-for-Consumer-Healthcare-Question-Summarization
+
+python -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+
+## Acknowledgments
+
+- Yahoo! Answers for the L6 dataset
+- National Library of Medicine (NIH)
+- Medical informatics experts who annotated CHQ-Summ
+- Hugging Face Transformers
+
+---
+
+## Links
+
+- Paper: https://arxiv.org/abs/2206.06581  
+- Dataset: https://doi.org/10.17605/OSF.IO/X5RGM  
+- Yahoo L6: https://webscope.sandbox.yahoo.com/catalog.php?datatype=l&did=11  
+
+---
+
+**If you find this repository useful, please star it.**
 
