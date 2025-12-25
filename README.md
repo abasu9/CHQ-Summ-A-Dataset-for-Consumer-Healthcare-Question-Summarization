@@ -125,9 +125,6 @@ All models are evaluated using the **same metric suite**:
 | ROUGE-L             | Longest common subsequence overlap   | Lexical     |
 | BERTScore           | Contextual semantic similarity       | Semantic    |
 | Semantic Coherence  | Readability and logical flow         | Structural  |
-| QE Overlap          | Retention of key question evidence   | Information |
-| Entity Preservation | Medical entity correctness           | Factual     |
-| SummaC              | Entailment-based factual consistency | Inference   |
 | Entailment          | Logical validity of summaries        | Inference   |
 
 ---
