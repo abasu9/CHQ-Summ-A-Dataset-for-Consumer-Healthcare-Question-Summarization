@@ -1,421 +1,240 @@
 """
-Comprehensive evaluation script - ALL CORRECTIONS APPLIED
-Metrics: ROUGE-L, BERTScore, Semantic Coherence, Q Entity Overlap, 
-         Entity Preservation, SummaC (REAL), Entailment
+Generate summaries using trained models
+Outputs Excel files with: original question, human summary, generated summary
 """
 
-import pandas as pd
-import numpy as np
-import torch
-from tqdm import tqdm
-from rouge_score import rouge_scorer
-import logging
-import spacy
-from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from summac.model_summac import SummaCZS
-import warnings
 import os
-warnings.filterwarnings('ignore')
+import xml.etree.ElementTree as ET
+import torch
+from transformers import (
+    ProphetNetTokenizer,
+    ProphetNetForConditionalGeneration,
+    PegasusTokenizer,
+    PegasusForConditionalGeneration,
+    BartTokenizer,
+    BartForConditionalGeneration,
+    T5Tokenizer,
+    T5ForConditionalGeneration,
+)
+from tqdm import tqdm
+import logging
+import pandas as pd
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Limit number of samples to generate summaries for
+GEN_SAMPLE_LIMIT = 50
 
-class ComprehensiveEvaluator:
-    """Comprehensive evaluation with all metrics corrected"""
+
+class TestDataLoader:
+    """Load test data"""
     
-    def __init__(self):
-        logger.info("Initializing evaluation models...")
+    def __init__(self, xml_file_path):
+        self.xml_file_path = xml_file_path
+        self.data = []
         
-        # Initialize ROUGE scorer
-        self.rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    def parse(self):
+        """Parse XML file"""
+        logger.info(f"Parsing test file: {self.xml_file_path}")
         
-        # Load NER model for entity extraction
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except:
-            logger.warning("Spacy model not found. Installing...")
-            os.system("python -m spacy download en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
+        tree = ET.parse(self.xml_file_path)
+        root = tree.getroot()
         
-        # Load sentence transformer for semantic coherence
-        self.semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+        documents = root.findall('.//document')
         
-        # Load NLI model for entailment
-        nli_model_name = 'microsoft/deberta-v2-xlarge-mnli'
-        self.nli_tokenizer = AutoTokenizer.from_pretrained(nli_model_name)
-        self.nli_model = AutoModelForSequenceClassification.from_pretrained(nli_model_name)
-        self.nli_model.eval()
-        
-        # Detect entailment label index from config
-        id2label = {int(k): v.lower() for k, v in self.nli_model.config.id2label.items()}
-        self.ent_idx = [i for i, lbl in id2label.items() if "entail" in lbl][0]
-        logger.info(f"Entailment label index: {self.ent_idx} ({id2label[self.ent_idx]})")
-        
-        if torch.cuda.is_available():
-            self.nli_model = self.nli_model.cuda()
-            self.device = 'cuda'
-        else:
-            self.device = 'cpu'
-        
-        # Load REAL SummaC model (SummaCZS)
-        logger.info("Loading SummaC model (this may take a moment)...")
-        self.summac_model = SummaCZS(granularity="sentence", model_name="vitc", device=self.device)
-        
-        logger.info("All evaluation models loaded!")
-    
-    def compute_rouge(self, predictions, references):
-        """Compute ROUGE scores"""
-        logger.info("Computing ROUGE scores...")
-        
-        rouge1_scores = []
-        rouge2_scores = []
-        rougeL_scores = []
-        
-        for pred, ref in zip(predictions, references):
-            try:
-                # Ensure strings are not None
-                if pred is None:
-                    pred = ""
-                if ref is None:
-                    ref = ""
-                    
-                scores = self.rouge_scorer.score(ref, pred)
-                rouge1_scores.append(scores['rouge1'].fmeasure)
-                rouge2_scores.append(scores['rouge2'].fmeasure)
-                rougeL_scores.append(scores['rougeL'].fmeasure)
-            except Exception as e:
-                logger.warning(f"Error computing ROUGE: {e}")
-                rouge1_scores.append(0.0)
-                rouge2_scores.append(0.0)
-                rougeL_scores.append(0.0)
-        
-        return {
-            'rouge1': round(np.mean(rouge1_scores) * 100, 4),
-            'rouge2': round(np.mean(rouge2_scores) * 100, 4),
-            'rougeL': round(np.mean(rougeL_scores) * 100, 4),
-            'rougeLsum': round(np.mean(rougeL_scores) * 100, 4)
-        }
-    
-    def compute_bertscore(self, predictions, references):
-        """
-        FIXED: Compute BERTScore with correct model_type
-        """
-        logger.info("Computing BERTScore...")
-        
-        from bert_score import score
-        
-        # FIXED: Use correct model_type matching NLI model
-        P, R, F1 = score(
-            predictions,
-            references,
-            model_type='microsoft/deberta-v2-xlarge-mnli',  # FIXED: was 'deberta-xlarge-mnli'
-            lang='en',
-            verbose=False,
-            device=self.device
-        )
-        
-        return {
-            'bertscore_precision': round(P.mean().item() * 100, 4),
-            'bertscore_recall': round(R.mean().item() * 100, 4),
-            'bertscore_f1': round(F1.mean().item() * 100, 4)
-        }
-    
-    def compute_semantic_coherence(self, questions, summaries):
-        """
-        Compute semantic coherence between questions and summaries
-        """
-        logger.info("Computing semantic coherence...")
-        
-        # Get embeddings
-        question_embeddings = self.semantic_model.encode(questions, show_progress_bar=True, batch_size=32)
-        summary_embeddings = self.semantic_model.encode(summaries, show_progress_bar=True, batch_size=32)
-        
-        # Compute cosine similarities
-        similarities = []
-        for q_emb, s_emb in zip(question_embeddings, summary_embeddings):
-            similarity = np.dot(q_emb, s_emb) / (np.linalg.norm(q_emb) * np.linalg.norm(s_emb))
-            similarities.append(similarity)
-        
-        return {
-            'semantic_coherence_mean': round(np.mean(similarities) * 100, 4),
-            'semantic_coherence_std': round(np.std(similarities) * 100, 4),
-            'semantic_coherence_scores': [round(s * 100, 4) for s in similarities]
-        }
-    
-    def extract_entities(self, text):
-        """Extract named entities from text"""
-        doc = self.nlp(text)
-        entities = set()
-        
-        for ent in doc.ents:
-            entities.add(ent.text.lower().strip())
-        
-        return entities
-    
-    def compute_entity_metrics(self, questions, summaries):
-        """
-        Compute Q Entity Overlap and Entity Preservation
-        
-        Q Entity Overlap = Jaccard similarity of entities
-        Entity Preservation = % of question entities in summary
-        """
-        logger.info("Computing entity metrics...")
-        
-        q_entity_overlap_scores = []  # Jaccard
-        entity_preservation_scores = []  # Preservation
-        
-        for question, summary in tqdm(zip(questions, summaries), total=len(questions), desc="Entity analysis"):
-            q_entities = self.extract_entities(question)
-            s_entities = self.extract_entities(summary)
+        for doc in documents:
+            doc_id = doc.find('id')
+            subject = doc.find('original_question_subject')
+            content = doc.find('original_question_content')
+            summary = doc.find('reference_summary')
             
-            # Handle edge cases
-            if len(q_entities) == 0:
-                # No entities in question to overlap or preserve
-                q_entity_overlap = 0.0
-                entity_preservation = 1.0  # Nothing to preserve
-            elif len(s_entities) == 0:
-                # Summary has no entities
-                q_entity_overlap = 0.0
-                entity_preservation = 0.0  # Failed to preserve
-            else:
-                intersection = len(q_entities & s_entities)
-                union = len(q_entities | s_entities)
+            if subject is not None:
+                # Combine subject and content
+                question_text = subject.text.strip() if subject.text else ""
                 
-                # Q Entity Overlap (Jaccard similarity)
-                q_entity_overlap = intersection / union if union > 0 else 0.0
+                if content is not None and content.text:
+                    content_text = content.text.strip()
+                    if content_text and content_text.lower() != question_text.lower():
+                        question_text = f"{question_text} {content_text}"
                 
-                # Entity Preservation (% of question entities preserved)
-                entity_preservation = intersection / len(q_entities)
-            
-            q_entity_overlap_scores.append(q_entity_overlap)
-            entity_preservation_scores.append(entity_preservation)
+                item = {
+                    'id': doc_id.text if doc_id is not None else '',
+                    'question': question_text
+                }
+                
+                # Include reference for output file (not for model)
+                if summary is not None and summary.text:
+                    item['reference_summary'] = summary.text.strip()
+                
+                self.data.append(item)
         
-        return {
-            'q_entity_overlap_mean': round(np.mean(q_entity_overlap_scores) * 100, 4),
-            'q_entity_overlap_std': round(np.std(q_entity_overlap_scores) * 100, 4),
-            'entity_preservation_mean': round(np.mean(entity_preservation_scores) * 100, 4),
-            'entity_preservation_std': round(np.std(entity_preservation_scores) * 100, 4),
-            'q_entity_overlap_scores': [round(j * 100, 4) for j in q_entity_overlap_scores],
-            'entity_preservation_scores': [round(p * 100, 4) for p in entity_preservation_scores]
-        }
+        logger.info(f"Loaded {len(self.data)} test examples")
+        return self.data
+
+
+def load_model_and_tokenizer(model_path):
+    """Load trained model and tokenizer"""
+    logger.info(f"Loading model from {model_path}")
     
-    def compute_entailment_batch(self, premises, hypotheses, batch_size=16):
-        """
-        Batched entailment computation for speed
-        Returns probability that premise entails hypothesis
-        """
-        all_scores = []
+    # Detect model type from path
+    if 'prophetnet' in model_path.lower():
+        tokenizer = ProphetNetTokenizer.from_pretrained(model_path)
+        model = ProphetNetForConditionalGeneration.from_pretrained(model_path)
+        model_type = 'prophetnet'
+    elif 'pegasus' in model_path.lower():
+        tokenizer = PegasusTokenizer.from_pretrained(model_path)
+        model = PegasusForConditionalGeneration.from_pretrained(model_path)
+        model_type = 'pegasus'
+    elif 'bart' in model_path.lower():
+        tokenizer = BartTokenizer.from_pretrained(model_path)
+        model = BartForConditionalGeneration.from_pretrained(model_path)
+        model_type = 'bart'
+    elif 't5' in model_path.lower():
+        tokenizer = T5Tokenizer.from_pretrained(model_path)
+        model = T5ForConditionalGeneration.from_pretrained(model_path)
+        model_type = 't5'
+    else:
+        raise ValueError(f"Unknown model type in path: {model_path}")
+    
+    return model, tokenizer, model_type
+
+
+def generate_summaries(
+    model,
+    tokenizer,
+    test_data,
+    model_type='seq2seq',
+    max_source_length=512,
+    max_target_length=128,
+    batch_size=16,
+    num_beams=4
+):
+    """Generate summaries for test data"""
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logger.info(f"Using device: {device}")
+    
+    model.to(device)
+    model.eval()
+    
+    summaries = []
+    
+    for i in tqdm(range(0, len(test_data), batch_size), desc="Generating summaries"):
+        batch = test_data[i:i+batch_size]
+        questions = [item['question'] for item in batch]
         
-        for i in range(0, len(premises), batch_size):
-            batch_premises = premises[i:i+batch_size]
-            batch_hypotheses = hypotheses[i:i+batch_size]
-            
-            inputs = self.nli_tokenizer(
-                batch_premises,
-                batch_hypotheses,
-                truncation=True,
-                padding=True,
-                max_length=512,
-                return_tensors='pt'
+        # Add T5 prefix if needed
+        if model_type == 't5':
+            questions = ["summarize: " + q for q in questions]
+        
+        # Tokenize
+        inputs = tokenizer(
+            questions,
+            max_length=max_source_length,
+            truncation=True,
+            padding=True,
+            return_tensors='pt'
+        ).to(device)
+        
+        # Generate
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_length=max_target_length,
+                num_beams=num_beams,
+                length_penalty=2.0,
+                early_stopping=True,
+                no_repeat_ngram_size=3
             )
-            
-            if self.device == 'cuda':
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                outputs = self.nli_model(**inputs)
-                logits = outputs.logits
-                probs = torch.softmax(logits, dim=1)
-            
-            # Use detected entailment index
-            batch_scores = probs[:, self.ent_idx].cpu().numpy()
-            all_scores.extend(batch_scores)
         
-        return all_scores
+        # Decode
+        batch_summaries = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        summaries.extend(batch_summaries)
     
-    def compute_entailment_metrics(self, questions, summaries):
-        """
-        Compute entailment scores (does question entail summary?)
-        One direction: Q → S
-        """
-        logger.info("Computing entailment scores (Q → S)...")
-        
-        entailment_scores = self.compute_entailment_batch(questions, summaries, batch_size=16)
-        
-        return {
-            'entailment_mean': round(np.mean(entailment_scores) * 100, 4),
-            'entailment_std': round(np.std(entailment_scores) * 100, 4),
-            'entailment_scores': [round(s * 100, 4) for s in entailment_scores]
-        }
-    
-    def compute_summac(self, questions, summaries):
-        """
-        FIXED: Compute REAL SummaC scores using SummaCZS model
-        """
-        logger.info("Computing SummaC scores (REAL SummaC model)...")
-        
-        summac_scores = []
-        
-        # SummaCZS expects documents (sources) and summaries
-        for question, summary in tqdm(zip(questions, summaries), total=len(questions), desc="SummaC"):
-            # SummaC score_one takes: document (source) and generated_text (summary)
-            score = self.summac_model.score([question], [summary])
-            summac_scores.append(score['scores'][0])
-        
-        return {
-            'summac_mean': round(np.mean(summac_scores) * 100, 4),
-            'summac_std': round(np.std(summac_scores) * 100, 4),
-            'summac_scores': [round(s * 100, 4) for s in summac_scores]
-        }
-    
-    def evaluate_all(self, summaries_excel_file):
-        """
-        Run all evaluation metrics
-        """
-        logger.info(f"\n{'='*80}")
-        logger.info(f"COMPREHENSIVE EVALUATION: {summaries_excel_file}")
-        logger.info(f"{'='*80}\n")
-        
-        # Load summaries from Excel
-        df = pd.read_excel(summaries_excel_file, engine='openpyxl')
-        
-        questions = df['Original Question'].tolist()
-        predictions = df['Generated Summary'].tolist()
-        references = df['Human Summary'].tolist()
-        
-        logger.info(f"Evaluating {len(predictions)} predictions...\n")
-        
-        # Compute all metrics
-        results = {}
-        
-        # 1. ROUGE
-        results['rouge'] = self.compute_rouge(predictions, references)
-        
-        # 2. BERTScore (FIXED)
-        results['bertscore'] = self.compute_bertscore(predictions, references)
-        
-        # 3. Semantic Coherence
-        results['semantic_coherence'] = self.compute_semantic_coherence(questions, predictions)
-        
-        # 4 & 5. Q Entity Overlap & Entity Preservation
-        results['entity_metrics'] = self.compute_entity_metrics(questions, predictions)
-        
-        # 6. SummaC (REAL SummaC model - FIXED)
-        results['summac'] = self.compute_summac(questions, predictions)
-        
-        # 7. Entailment
-        results['entailment'] = self.compute_entailment_metrics(questions, predictions)
-        
-        # Add summary statistics
-        results['summary'] = {
-            'num_examples': len(predictions),
-            'avg_prediction_length': round(np.mean([len(p.split()) for p in predictions]), 2),
-            'avg_reference_length': round(np.mean([len(r.split()) for r in references]), 2),
-            'avg_question_length': round(np.mean([len(q.split()) for q in questions]), 2)
-        }
-        
-        return results
+    return summaries
 
 
-def save_metrics_to_excel(results, output_file):
-    """Save evaluation metrics to Excel file"""
+def save_to_excel(test_data, predictions, output_file):
+    """Save results to Excel file"""
     
-    logger.info(f"Saving metrics to Excel: {output_file}")
+    logger.info(f"Saving results to Excel: {output_file}")
     
-    # Create summary metrics DataFrame
-    metrics_data = {
-        'Metric': [],
-        'Score': []
-    }
+    # Prepare data for Excel
+    excel_data = []
+    for item, pred in zip(test_data, predictions):
+        row = {
+            'ID': item['id'],
+            'Original Question': item['question'],
+            'Human Summary': item.get('reference_summary', ''),
+            'Generated Summary': pred
+        }
+        excel_data.append(row)
     
-    # ROUGE scores
-    for metric, score in results['rouge'].items():
-        metrics_data['Metric'].append(f'ROUGE-{metric.replace("rouge", "")}')
-        metrics_data['Score'].append(score)
-    
-    # BERTScore
-    for metric, score in results['bertscore'].items():
-        name = metric.replace('bertscore_', 'BERTScore-')
-        metrics_data['Metric'].append(name)
-        metrics_data['Score'].append(score)
-    
-    # Semantic Coherence
-    metrics_data['Metric'].append('Semantic Coherence')
-    metrics_data['Score'].append(results['semantic_coherence']['semantic_coherence_mean'])
-    
-    # Q Entity Overlap
-    metrics_data['Metric'].append('Q Entity Overlap')
-    metrics_data['Score'].append(results['entity_metrics']['q_entity_overlap_mean'])
-    
-    # Entity Preservation
-    metrics_data['Metric'].append('Entity Preservation')
-    metrics_data['Score'].append(results['entity_metrics']['entity_preservation_mean'])
-    
-    # SummaC
-    metrics_data['Metric'].append('SummaC')
-    metrics_data['Score'].append(results['summac']['summac_mean'])
-    
-    # Entailment
-    metrics_data['Metric'].append('Entailment')
-    metrics_data['Score'].append(results['entailment']['entailment_mean'])
-    
-    df = pd.DataFrame(metrics_data)
+    # Create DataFrame
+    df = pd.DataFrame(excel_data)
     
     # Save to Excel
     df.to_excel(output_file, index=False, engine='openpyxl')
     
-    logger.info(f"✓ Metrics saved to: {output_file}")
+    logger.info(f"✓ Excel file saved: {output_file}")
+    logger.info(f"  Rows: {len(df)}")
+    logger.info(f"  Columns: {', '.join(df.columns)}")
 
 
-def print_results(results):
-    """Print results in readable format"""
+def generate_for_model(model_path, test_xml, output_dir):
+    """Run generation for a single model"""
     
-    print("\n" + "="*80)
-    print("EVALUATION RESULTS")
-    print("="*80)
+    logger.info(f"\n{'='*80}")
+    logger.info(f"Generating summaries: {model_path}")
+    logger.info(f"{'='*80}\n")
     
-    print("\n--- ROUGE Scores ---")
-    for metric, score in results['rouge'].items():
-        print(f"{metric}: {score:.4f}")
+    os.makedirs(output_dir, exist_ok=True)
     
-    print("\n--- BERTScore ---")
-    for metric, score in results['bertscore'].items():
-        print(f"{metric}: {score:.4f}")
+    # Load test data
+    test_loader = TestDataLoader(test_xml)
+    test_data = test_loader.parse()
+
+    # Cap to first N samples for faster evaluation
+    if len(test_data) > GEN_SAMPLE_LIMIT:
+        logger.info(f"Capping test set to first {GEN_SAMPLE_LIMIT} samples (from {len(test_data)})")
+        test_data = test_data[:GEN_SAMPLE_LIMIT]
     
-    print("\n--- Semantic Coherence ---")
-    print(f"Mean: {results['semantic_coherence']['semantic_coherence_mean']:.4f}")
-    print(f"Std: {results['semantic_coherence']['semantic_coherence_std']:.4f}")
+    # Load model
+    model, tokenizer, model_type = load_model_and_tokenizer(model_path)
     
-    print("\n--- Q Entity Overlap ---")
-    print(f"Mean: {results['entity_metrics']['q_entity_overlap_mean']:.4f}")
-    print(f"Std: {results['entity_metrics']['q_entity_overlap_std']:.4f}")
+    # Generate summaries
+    start_time = datetime.now()
+    predictions = generate_summaries(
+        model=model,
+        tokenizer=tokenizer,
+        test_data=test_data,
+        model_type=model_type,
+        max_source_length=512,
+        max_target_length=128,
+        batch_size=16,
+        num_beams=4
+    )
+    generation_time = (datetime.now() - start_time).total_seconds()
     
-    print("\n--- Entity Preservation ---")
-    print(f"Mean: {results['entity_metrics']['entity_preservation_mean']:.4f}")
-    print(f"Std: {results['entity_metrics']['entity_preservation_std']:.4f}")
+    logger.info(f"Generation completed in {generation_time:.2f} seconds")
+    logger.info(f"Average time per example: {generation_time/len(test_data):.3f} seconds")
     
-    print("\n--- SummaC (REAL) ---")
-    print(f"Mean: {results['summac']['summac_mean']:.4f}")
-    print(f"Std: {results['summac']['summac_std']:.4f}")
+    # Save to Excel
+    excel_file = os.path.join(output_dir, "summaries.xlsx")
+    save_to_excel(test_data, predictions, excel_file)
     
-    print("\n--- Entailment (Q → S) ---")
-    print(f"Mean: {results['entailment']['entailment_mean']:.4f}")
-    print(f"Std: {results['entailment']['entailment_std']:.4f}")
-    
-    print("\n--- Summary Statistics ---")
-    for metric, value in results['summary'].items():
-        print(f"{metric}: {value}")
-    
-    print("\n" + "="*80)
+    return excel_file
 
 
 def main():
-    """Evaluate all models"""
+    """Main function for batch generation"""
     
     BASE_RESULTS_DIR = "./yahoo_l6_results"
+    TEST_XML = "/home/ubuntu/yahoo_l6_project/data/merged_test_found_only.xml"
     
+    # Model directories
     model_dirs = [
         "prophetnet-large-uncased",
         "pegasus-large",
@@ -424,39 +243,41 @@ def main():
     ]
     
     logger.info("="*80)
-    logger.info("EVALUATING ALL MODELS")
+    logger.info("GENERATING SUMMARIES FOR ALL MODELS")
     logger.info("="*80)
     
-    # Initialize evaluator once
-    evaluator = ComprehensiveEvaluator()
+    generated_files = []
     
     for model_dir in model_dirs:
-        summaries_file = os.path.join(BASE_RESULTS_DIR, model_dir, "summaries.xlsx")
+        model_path = os.path.join(BASE_RESULTS_DIR, model_dir)
         
-        if not os.path.exists(summaries_file):
-            logger.warning(f"Summaries file not found: {summaries_file}")
+        if not os.path.exists(model_path):
+            logger.warning(f"Model directory not found: {model_path}")
+            logger.warning("Skipping...")
             continue
         
-        logger.info(f"\nEvaluating {model_dir}...")
+        output_dir = model_path
         
         try:
-            # Run evaluation
-            results = evaluator.evaluate_all(summaries_file)
-            
-            # Print results
-            print_results(results)
-            
-            # Save metrics to Excel
-            metrics_file = os.path.join(BASE_RESULTS_DIR, model_dir, "metrics.xlsx")
-            save_metrics_to_excel(results, metrics_file)
-            
+            excel_file = generate_for_model(model_path, TEST_XML, output_dir)
+            generated_files.append({
+                'model': model_dir,
+                'file': excel_file
+            })
         except Exception as e:
-            logger.error(f"Error evaluating {model_dir}: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error generating for {model_dir}: {str(e)}")
             continue
     
-    logger.info("\n✓ All evaluations completed!")
+    # Summary
+    logger.info("\n" + "="*80)
+    logger.info("GENERATION SUMMARY")
+    logger.info("="*80)
+    
+    for item in generated_files:
+        logger.info(f"\nModel: {item['model']}")
+        logger.info(f"Summaries: {item['file']}")
+    
+    logger.info("\n✓ All summaries generated!")
 
 
 if __name__ == "__main__":
