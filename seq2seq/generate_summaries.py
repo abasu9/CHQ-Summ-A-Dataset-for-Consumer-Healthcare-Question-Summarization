@@ -24,6 +24,9 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Limit number of samples to generate summaries for
+GEN_SAMPLE_LIMIT = 50
+
 
 class TestDataLoader:
     """Load test data"""
@@ -192,6 +195,11 @@ def generate_for_model(model_path, test_xml, output_dir):
     # Load test data
     test_loader = TestDataLoader(test_xml)
     test_data = test_loader.parse()
+
+    # Cap to first N samples for faster evaluation
+    if len(test_data) > GEN_SAMPLE_LIMIT:
+        logger.info(f"Capping test set to first {GEN_SAMPLE_LIMIT} samples (from {len(test_data)})")
+        test_data = test_data[:GEN_SAMPLE_LIMIT]
     
     # Load model
     model, tokenizer, model_type = load_model_and_tokenizer(model_path)
@@ -224,7 +232,7 @@ def main():
     """Main function for batch generation"""
     
     BASE_RESULTS_DIR = "./yahoo_l6_results"
-    TEST_XML = "/mnt/user-data/uploads/merged_test_found_only.xml"
+    TEST_XML = "/home/ubuntu/yahoo_l6_project/data/merged_test_found_only.xml"
     
     # Model directories
     model_dirs = [
