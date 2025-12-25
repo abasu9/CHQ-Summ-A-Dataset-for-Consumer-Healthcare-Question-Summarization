@@ -8,7 +8,6 @@ accelerate>=0.20.0
 evaluate>=0.4.0
 rouge-score>=0.1.2
 bert-score>=0.3.13
-summac>=0.0.3
 
 # NLP and entity extraction
 spacy>=3.5.0
