@@ -229,10 +229,10 @@ def train_model(
         padding=True
     )
     
-    # Training arguments - optimized for g5.16xlarge
+    # Training arguments - optimized for g5.12xlarge
     training_args = Seq2SeqTrainingArguments(
         output_dir=output_dir,
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
