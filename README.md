@@ -9,8 +9,8 @@
 
 **A Dataset and Benchmark for Consumer Healthcare Question Summarization**
 
-> **Original Paper**: [CHQ-Summ: A Dataset and Benchmark for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2512.23637)
-> **Original Authors**: Abhishek Basu, Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
+> **Paper**: [CHQ-Summ: A Dataset and Benchmark for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2512.23637)                     
+> **Authors**: Abhishek Basu, Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
 > **Institutions**: University of Illinois Chicago & National Library of Medicine (NIH)
 
 ---
@@ -23,7 +23,7 @@ Consumers frequently post long, descriptive medical questions online, which are 
 
 This repository **reproduces and extends** the original work:
 
-> **CHQ-Summ: A Dataset for Consumer Healthcare Question Summarization**  
+> **CHQ-Summ: A Dataset and Benchmark for Consumer Healthcare Question Summarization**  
 > Yadav et al., *Scientific Data* (under review, 2025)
 
 This implementation includes:
