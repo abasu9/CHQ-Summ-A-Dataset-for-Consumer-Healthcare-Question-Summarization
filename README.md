@@ -9,7 +9,7 @@
 
 **A Dataset and Benchmark for Consumer Healthcare Question Summarization**
 
-> **Original Paper**: [CHQ-Summ: A Dataset and Benchmark for Consumer Healthcare Question Summarization]([https://arxiv.org/abs/2206.06581](https://arxiv.org/abs/2512.23637))  
+> **Original Paper**: [CHQ-Summ: A Dataset and Benchmark for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2512.23637) 
 > **Original Authors**: Abhishek Basu, Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
 > **Institutions**: University of Illinois Chicago & National Library of Medicine (NIH)
 
