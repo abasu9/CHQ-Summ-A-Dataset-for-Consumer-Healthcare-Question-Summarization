@@ -7,9 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/Paper-arXiv-green.svg)](https://arxiv.org/abs/2206.06581)
 
-**Evaluation framework for the CHQ-Summ dataset for consumer healthcare question summarization.**
+**A Dataset and Benchmark for Consumer Healthcare Question Summarization**
 
-> **Original Paper**: [CHQ-Summ: A Dataset for Consumer Healthcare Question Summarization](https://arxiv.org/abs/2206.06581)  
+> **Original Paper**: [CHQ-Summ: A Dataset and Benchmark for Consumer Healthcare Question Summarization]([https://arxiv.org/abs/2206.06581](https://arxiv.org/abs/2512.23637))  
 > **Original Authors**: Abhishek Basu, Shweta Yadav, Deepak Gupta, Dina Demner-Fushman  
 > **Institutions**: University of Illinois Chicago & National Library of Medicine (NIH)
 
